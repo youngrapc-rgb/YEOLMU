@@ -113,31 +113,29 @@ export default function AttendancePage() {
     return days
   }
 
-return (
-    <div style={{ 
-      padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif',
-      backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh' // 전체 배경/글자색 고정
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-        <span style={{ fontWeight: 'bold', color: '#000000' }}>👤 {userName}님</span>
-        <button onClick={async () => { await supabase.auth.signOut(); router.push('/'); }} 
-          style={{ padding: '6px 12px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', color: '#333', borderRadius: '5px' }}>
-          로그아웃
-        </button>
-      </div>
+  return (
+    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <span style={{ fontWeight: 'bold' }}>👤 {userName}님</span>
+        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')}>로그아웃</button>
+      </div>
 
-      <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '10px', border: '1px solid #c8e6c9', textAlign: 'center' }}>
-        <strong style={{ color: '#2e7d32' }}>📊 {monthlyStats.month}월 근무 합계</strong>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '5px', color: '#1b5e20' }}>
-          {monthlyStats.totalHours}시간 / {monthlyStats.totalDays}일 근무
-        </div>
-      </div>
+      {/* --- [수정] 월 합계 요약 섹션 --- */}
+      <div style={{ 
+        marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e9', 
+        borderRadius: '10px', border: '1px solid #c8e6c9', textAlign: 'center' 
+      }}>
+        <strong style={{ color: '#2e7d32' }}>📊 {monthlyStats.month}월 근무 합계</strong>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '5px' }}>
+          {monthlyStats.totalHours}시간 / {monthlyStats.totalDays}일 근무
+        </div>
+      </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} style={{ color: '#000' }}>◀</button>
-        <h3 style={{ color: '#000', margin: 0 }}>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} style={{ color: '#000' }}>▶</button>
-      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}>◀</button>
+        <h3>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}>▶</button>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', border: '1px solid #ddd', marginBottom: '20px' }}>
         {['일','월','화','수','목','금','토'].map(day => <div key={day} style={{ padding: '5px', backgroundColor: '#f5f5f5', fontSize: '12px', textAlign: 'center' }}>{day}</div>)}
