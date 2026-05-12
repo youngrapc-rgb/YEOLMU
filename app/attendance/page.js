@@ -30,7 +30,6 @@ export default function AttendancePage() {
 
   useEffect(() => { fetchUserDataAndRecords() }, [fetchUserDataAndRecords])
 
-  // --- [추가] 현재 달력에 보이는 달의 합계 계산 ---
   const monthlyStats = useMemo(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth() + 1
@@ -103,9 +102,11 @@ export default function AttendancePage() {
           setMemo(record ? record.memo || '' : '')
         }} style={{
           padding: '10px', border: '1px solid #eee', minHeight: '60px', cursor: 'pointer',
-          backgroundColor: selectedDate === dateStr ? '#e3f2fd' : (record ? '#f1f8e9' : 'white')
+          // 선택된 날짜와 기록 있는 날짜 색상 명시
+          backgroundColor: selectedDate === dateStr ? '#e3f2fd' : (record ? '#f1f8e9' : '#ffffff'),
+          color: '#333' 
         }}>
-          <div style={{ fontSize: '12px' }}>{d}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{d}</div>
           {record && <div style={{ fontSize: '10px', color: '#2e7d32', fontWeight: 'bold' }}>{record.working_hours}h</div>}
         </div>
       )
@@ -114,61 +115,42 @@ export default function AttendancePage() {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <span style={{ fontWeight: 'bold' }}>👤 {userName}님</span>
-        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')}>로그아웃</button>
+    <div style={{ 
+      // 배경색 흰색 고정 및 글자색 검정 고정
+      backgroundColor: '#ffffff', 
+      color: '#000000',
+      minHeight: '100vh',
+      padding: '20px', 
+      maxWidth: '600px', 
+      margin: '0 auto', 
+      fontFamily: 'sans-serif' 
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+        <span style={{ fontWeight: 'bold', fontSize: '16px' }}>👤 {userName}님</span>
+        <button 
+          onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')}
+          style={{ padding: '5px 10px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer', color: '#333' }}
+        >
+          로그아웃
+        </button>
       </div>
 
-      {/* --- [수정] 월 합계 요약 섹션 --- */}
       <div style={{ 
         marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e9', 
         borderRadius: '10px', border: '1px solid #c8e6c9', textAlign: 'center' 
       }}>
         <strong style={{ color: '#2e7d32' }}>📊 {monthlyStats.month}월 근무 합계</strong>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '5px' }}>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '5px', color: '#1b5e20' }}>
           {monthlyStats.totalHours}시간 / {monthlyStats.totalDays}일 근무
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}>◀</button>
-        <h3>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}>▶</button>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} style={{ padding: '5px 15px', fontSize: '18px', background: 'none', border: '1px solid #ddd', borderRadius: '5px', color: '#333' }}>◀</button>
+        <h3 style={{ margin: 0, color: '#000' }}>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} style={{ padding: '5px 15px', fontSize: '18px', background: 'none', border: '1px solid #ddd', borderRadius: '5px', color: '#333' }}>▶</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', border: '1px solid #ddd', marginBottom: '20px' }}>
-        {['일','월','화','수','목','금','토'].map(day => <div key={day} style={{ padding: '5px', backgroundColor: '#f5f5f5', fontSize: '12px', textAlign: 'center' }}>{day}</div>)}
-        {renderCalendar()}
-      </div>
-
-      <div style={{ padding: '20px', border: '2px solid #4CAF50', borderRadius: '10px', backgroundColor: '#fff' }}>
-        <h4 style={{ margin: '0 0 15px 0' }}>📍 {selectedDate} 근무 기록</h4>
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <input 
-              type="number" step="0.5" placeholder="근무 시간 입력" 
-              value={hours} onChange={e => setHours(e.target.value)} required 
-              style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc' }}
-            />
-            <input 
-              type="text" placeholder="메모 (선택 사항)" 
-              value={memo} onChange={e => setMemo(e.target.value)} 
-              style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc' }}
-            />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
-              <button type="submit" style={{ flex: 2, padding: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                {currentRecord ? '기록 수정' : '기록 저장'}
-              </button>
-              {currentRecord && (
-                <button type="button" onClick={handleDelete} style={{ flex: 1, padding: '12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  삭제
-                </button>
-              )}
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', border: '1px solid #ddd', backgroundColor: '#fff', marginBottom: '20px' }}>
+        {['일','월','화','수','목','금','토'].map(day => (
+          <div key={day} style={{ padding: '5px', backgroundColor: '#f9f9f9', fontSize

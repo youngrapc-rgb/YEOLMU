@@ -14,7 +14,7 @@ export default function MainPage() {
       backgroundColor: '#f5f7fa'
     }}>
       <h1 style={{ color: '#333', marginBottom: '10px' }}>🍀 열무 출퇴근 시스템</h1>
-      <p style={{ color: '#666', marginBottom: '30px' }}>본인의 권한에 맞는 페이지로 이동해주세요.</p>
+      <p style={{ color: '#666', marginBottom: '30px' }}>오늘도 수고하셨습니다.</p>
 
       <div style={{ display: 'flex', gap: '20px' }}>
         {/* 직원용 버튼 */}
