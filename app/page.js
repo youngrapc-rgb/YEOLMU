@@ -18,7 +18,7 @@ export default function MainPage() {
 
       <div style={{ display: 'flex', gap: '20px' }}>
         {/* 직원용 버튼 */}
-        <Link href="/worker" style={{
+        <Link href="/attendance" style={{
           padding: '20px 40px',
           backgroundColor: '#4caf50',
           color: 'white',
