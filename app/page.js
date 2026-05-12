@@ -28,7 +28,7 @@ export default function MainPage() {
           fontWeight: 'bold',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
         }}>
-          직원 출퇴근
+          근무시간 입력
         </Link>
 
         {/* 관리자용 버튼 */}
