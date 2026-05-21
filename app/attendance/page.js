@@ -92,7 +92,7 @@ export default function AttendancePage() {
     const year = currentDate.getFullYear(); const month = currentDate.getMonth()
     const firstDay = new Date(year, month, 1).getDay(); const lastDate = new Date(year, month + 1, 0).getDate()
     const days = []
-    for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} style={{ backgroundColor: '#ffffff' }} />)
+    for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} style={{ backgroundColor: '#ffffff', border: '1px solid #eee' }} />)
     for (let d = 1; d <= lastDate; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
       const record = myRecords.find(r => r.work_date === dateStr)
@@ -118,7 +118,7 @@ export default function AttendancePage() {
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif', backgroundColor: '#ffffff', color: '#111111', minHeight: '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
         <span style={{ fontWeight: 'bold', color: '#111111' }}>👤 {userName}님</span>
-        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')} style={{ color: '#111111', backgroundColor: '#f5f5f5', border: '1px solid #ccc', padding: '6px 12px', borderRadius: '5px', cursor: 'pointer' }}>로그아웃</button>
+        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')} style={{ color: '#111111', backgroundColor: '#f5f5f5', border: '1px solid #ccc', padding: '6px 12px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>로그아웃</button>
       </div>
 
       {/* --- [수정] 월 합계 요약 섹션 --- */}
@@ -133,18 +133,18 @@ export default function AttendancePage() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} style={{ color: '#111111', backgroundColor: '#ffffff', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>◀</button>
-        <h3 style={{ color: '#111111', margin: 0 }}>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} style={{ color: '#111111', backgroundColor: '#ffffff', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>▶</button>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} style={{ color: '#111111', backgroundColor: '#ffffff', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>◀</button>
+        <h3 style={{ color: '#111111', margin: 0, fontWeight: 'bold' }}>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
+        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} style={{ color: '#111111', backgroundColor: '#ffffff', border: '1px solid #ccc', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>▶</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', border: '1px solid #ddd', marginBottom: '20px', backgroundColor: '#ffffff' }}>
-        {['일','월','화','수','목','금','토'].map(day => <div key={day} style={{ padding: '5px', backgroundColor: '#f5f5f5', fontSize: '12px', textAlign: 'center', color: '#444444', fontWeight: 'bold', borderBottom: '1px solid #ddd' }}>{day}</div>)}
+        {['일','월','화','수','목','금','토'].map(day => <div key={day} style={{ padding: '5px', backgroundColor: '#f5f5f5', fontSize: '12px', textAlign: 'center', color: '#111111', fontWeight: 'bold', borderBottom: '1px solid #ddd' }}>{day}</div>)}
         {renderCalendar()}
       </div>
 
       <div style={{ padding: '20px', border: '2px solid #4CAF50', borderRadius: '10px', backgroundColor: '#ffffff' }}>
-        <h4 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>📍 {selectedDate} 근무 기록</h4>
+        <h4 style={{ margin: '0 0 15px 0', color: '#2e7d32', fontWeight: 'bold' }}>📍 {selectedDate} 근무 기록</h4>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <input 
