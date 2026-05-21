@@ -61,11 +61,10 @@ export default function AdminPage() {
     }
   }, [filteredRecords, currentMonthStr, searchTerm])
 
-  // --- [추가] 우측 영역에 보여줄 해당 월 전체 내역 필터링 및 날짜순 정렬 ---
   const currentMonthRecords = useMemo(() => {
     return filteredRecords
       .filter(r => r.work_date.startsWith(currentMonthStr))
-      .sort((a, b) => b.work_date.localeCompare(a.work_date)) // 최신 날짜순 정렬 (오름차순을 원하시면 a.work_date.localeCompare(b.work_date)로 변경 가능)
+      .sort((a, b) => b.work_date.localeCompare(a.work_date))
   }, [filteredRecords, currentMonthStr])
 
   const renderCalendar = () => {
@@ -86,7 +85,7 @@ export default function AdminPage() {
           color: '#111111'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: holidayName ? '#d32f2f' : '#111111' }}>{d}</span>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#111111' }}>{d}</span>
             {holidayName && <span style={{ fontSize: '9px', color: '#d32f2f', fontWeight: 'bold' }}>{holidayName}</span>}
           </div>
           <div style={{ marginTop: '5px' }}>
@@ -127,7 +126,6 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* --- [기능 유지] 직원 검색창 아래 회원가입한 직원들 서제스트 목록 --- */}
         <div style={{ marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#555555', marginBottom: '6px' }}>👤 등록된 직원 선택:</div>
           {allUsers.length === 0 ? (
@@ -181,7 +179,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* --- [코드 수정] 하루 내역이 아닌 해당 월 전체 내역 목록 출력 구역 --- */}
         <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '10px', backgroundColor: '#ffffff', maxHeight: '80vh', overflowY: 'auto' }}>
           <h3 style={{ marginTop: 0, fontSize: '16px', borderBottom: '1px solid #eee', paddingBottom: '10px', color: '#111111', fontWeight: 'bold' }}>
             📍 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 전체 내역
@@ -190,19 +187,39 @@ export default function AdminPage() {
           {currentMonthRecords.length === 0 ? (
             <div style={{ fontSize: '14px', color: '#666666' }}>이번 달에 등록된 근무 기록이 없습니다.</div>
           ) : (
-            currentMonthRecords.map(r => (
-              <div key={r.id} style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid #f0f0f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ color: '#111111' }}>
-                    <span style={{ color: '#1976d2', marginRight: '8px' }}>[{r.work_date.slice(5)}]</span>
-                    {r.user_name} <span style={{fontSize:'11px', color:'#666666'}}>({r.birth_date})</span>
-                  </strong>
-                  <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>{r.working_hours}시간</span>
+            currentMonthRecords.map(r => {
+              const outMatch = r.memo?.match(/^\[외:\s*([\d.]+)h\]/)
+              const outHours = outMatch ? parseFloat(outMatch[1]) || 0 : 0
+              const inHours = r.working_hours - outHours
+              const cleanMemo = r.memo ? r.memo.replace(/^\[외:\s*[\d.]+h\]\s*/, '') : ''
+
+              return (
+                <div key={r.id} style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ color: '#111111' }}>
+                      <span style={{ color: '#1976d2', marginRight: '8px' }}>[{r.work_date.slice(5)}]</span>
+                      {r.user_name} <span style={{fontSize:'11px', color:'#666666'}}>({r.birth_date})</span>
+                    </strong>
+                    <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>총 {r.working_hours}시간</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '5px', marginTop: '6px' }}>
+                    <span style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', backgroundColor: '#f1f3f4', color: '#555555', border: '1px solid #e0e0e0' }}>
+                      ⏱️ 근무표 내: <strong>{inHours}h</strong>
+                    </span>
+                    {/* --- [코드 수정] 외 근무시간이 0보다 클 때만 배지가 노출되도록 예외 처리 --- */}
+                    {outHours > 0 && (
+                      <span style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', backgroundColor: '#fff3e0', color: '#e65100', border: '1px solid #ffe0b2' }}>
+                        🚗 근무표 외: <strong>{outHours}h</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  {cleanMemo && <div style={{ fontSize: '12px', color: '#111111', marginTop: '8px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px', borderLeft: '3px solid #2e7d32' }}>📝 {cleanMemo}</div>}
+                  <button onClick={async () => { if(confirm(`${r.work_date}의 ${r.user_name}님 기록을 삭제하시겠습니까?`)){ await supabase.from('attendance').delete().eq('id',r.id); fetchData(); } }} style={{ marginTop: '10px', color: '#d32f2f', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', padding: 0 }}>기록 삭제</button>
                 </div>
-                {r.memo && <div style={{ fontSize: '12px', color: '#111111', marginTop: '8px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px', borderLeft: '3px solid #2e7d32' }}>📝 {r.memo}</div>}
-                <button onClick={async () => { if(confirm(`${r.work_date}의 ${r.user_name}님 기록을 삭제하시겠습니까?`)){ await supabase.from('attendance').delete().eq('id',r.id); fetchData(); } }} style={{ marginTop: '10px', color: '#d32f2f', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', padding: 0 }}>기록 삭제</button>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>
