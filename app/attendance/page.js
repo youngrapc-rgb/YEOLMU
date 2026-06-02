@@ -43,14 +43,14 @@ export default function AttendancePage() {
   useEffect(() => {
     const record = myRecords.find(r => r.work_date === selectedDate)
     if (record) {
-      // 메모에서 [외: X.Xh] 또는 [외: Xh] 형태가 있는지 정확히 추출
-      const match = record.memo?.match(/^\[외:\s*([\d.]+)h\]/)
+      // 메모에서 [외: X.Xh] 또는 [외: Xh] 또는 [외: -Xh] 형태가 있는지 정확히 추출 (음수 매칭 추가)
+      const match = record.memo?.match(/^\[외:\s*([-\d.]+)h\]/)
       if (match) {
         const outH = parseFloat(match[1]) || 0
         const totalH = parseFloat(record.working_hours) || 0
         setOutScheduleHours(String(outH))
-        setInScheduleHours(String(totalH - outH)) // 전체 시간에서 외 시간을 뺀 나머지를 내 시간에 할당
-        setMemo(record.memo.replace(/^\[외:\s*[\d.]+h\]\s*/, ''))
+        setInScheduleHours(String(Number((totalH - outH).toFixed(2)))) // 부동소수점 오차 방지 및 음수 연산 안전 처리
+        setMemo(record.memo.replace(/^\[외:\s*[-\d.]+h\]\s*/, ''))
       } else {
         setInScheduleHours(String(record.working_hours))
         setOutScheduleHours('')
@@ -70,9 +70,10 @@ export default function AttendancePage() {
     
     const targetMonthRecords = myRecords.filter(r => r.work_date.startsWith(monthStr))
     const totalHours = targetMonthRecords.reduce((sum, r) => sum + (Number(r.working_hours) || 0), 0)
-    const totalDays = targetMonthRecords.filter(r => Number(r.working_hours) > 0).length
+    // 음수 근무일도 기록이 존재하는 날이므로 0시간이 아닌 날을 모두 카운트합니다.
+    const totalDays = targetMonthRecords.filter(r => Number(r.working_hours) !== 0).length
 
-    return { totalHours, totalDays, month }
+    return { totalHours: Number(totalHours.toFixed(2)), totalDays, month }
   }, [myRecords, currentDate])
 
   const currentRecord = myRecords.find(r => r.work_date === selectedDate)
@@ -97,14 +98,15 @@ export default function AttendancePage() {
 
     const numInHours = parseFloat(inScheduleHours) || 0
     const numOutHours = parseFloat(outScheduleHours) || 0
-    const totalHoursCombined = numInHours + numOutHours
+    const totalHoursCombined = Number((numInHours + numOutHours).toFixed(2))
 
-    if (totalHoursCombined <= 0) {
+    // 0시간일 때만 입력을 막고, 음수(-) 시간은 정상 등록되도록 변경
+    if (totalHoursCombined === 0) {
       return alert('근무 시간을 입력해주세요.')
     }
 
     let finalMemo = memo.trim()
-    if (numOutHours > 0) {
+    if (numOutHours !== 0) {
       finalMemo = `[외: ${numOutHours}h] ${finalMemo}`.trim()
     }
 
@@ -147,7 +149,7 @@ export default function AttendancePage() {
           color: '#111111'
         }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#111111' }}>{d}</div>
-          {record && <div style={{ fontSize: '10px', color: '#2e7d32', fontWeight: 'bold' }}>{record.working_hours}h</div>}
+          {record && <div style={{ fontSize: '10px', color: Number(record.working_hours) < 0 ? '#b71c1c' : '#2e7d32', fontWeight: 'bold' }}>{record.working_hours}h</div>}
         </div>
       )
     }
