@@ -24,7 +24,6 @@ const HOLIDAYS = {
 
 export default function AdminPage() {
   const [allRecords, setAllRecords] = useState([])
-  const [allUsers, setAllUsers] = useState([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [searchTerm, setSearchTerm] = useState('')
@@ -34,15 +33,20 @@ export default function AdminPage() {
     const { data: recs } = await supabase.from('attendance').select('*').order('work_date', { ascending: false })
     if (recs) {
       setAllRecords(recs)
-      const uniqueUsers = Array.from(new Set(recs.map(r => `${r.user_name}|${r.birth_date}`)))
-        .map(u => ({ user_name: u.split('|')[0], birth_date: u.split('|')[1] }))
-      setAllUsers(uniqueUsers)
     }
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+
+  // --- [코드 수정] 현재 선택된 월에 근무 기록이 있는 직원만 동적으로 추출 ---
+  const allUsers = useMemo(() => {
+    const currentMonthRecords = allRecords.filter(r => r.work_date.startsWith(currentMonthStr))
+    const uniqueUsers = Array.from(new Set(currentMonthRecords.map(r => `${r.user_name}|${r.birth_date}`)))
+      .map(u => ({ user_name: u.split('|')[0], birth_date: u.split('|')[1] }))
+    return uniqueUsers
+  }, [allRecords, currentMonthStr])
 
   const filteredRecords = useMemo(() => {
     return allRecords.filter(r => {
@@ -55,9 +59,11 @@ export default function AdminPage() {
   const monthlyStats = useMemo(() => {
     if (!searchTerm) return null
     const targetMonthRecords = filteredRecords.filter(r => r.work_date.startsWith(currentMonthStr))
+    const totalHours = targetMonthRecords.reduce((sum, r) => sum + (Number(r.working_hours) || 0), 0)
+    
     return {
-      totalHours: targetMonthRecords.reduce((sum, r) => sum + (Number(r.working_hours) || 0), 0),
-      totalDays: targetMonthRecords.filter(r => Number(r.working_hours) > 0).length
+      totalHours: Number(totalHours.toFixed(2)),
+      totalDays: targetMonthRecords.filter(r => Number(r.working_hours) !== 0).length
     }
   }, [filteredRecords, currentMonthStr, searchTerm])
 
@@ -89,15 +95,20 @@ export default function AdminPage() {
             {holidayName && <span style={{ fontSize: '9px', color: '#d32f2f', fontWeight: 'bold' }}>{holidayName}</span>}
           </div>
           <div style={{ marginTop: '5px' }}>
-            {daily.map(r => (
-              <div key={r.id} style={{ 
-                fontSize: '10px', padding: '2px 4px', borderRadius: '3px', marginBottom: '2px',
-                backgroundColor: '#e3f2fd', color: '#1976d2', display: 'flex', justifyContent: 'space-between'
-              }}>
-                <span style={{ fontWeight: 'bold' }}>{searchTerm ? `${r.working_hours}h` : `${r.user_name.slice(0,2)} ${r.working_hours}h`}</span>
-                {r.memo && <span>📝</span>}
-              </div>
-            ))}
+            {daily.map(r => {
+              const isNegative = Number(r.working_hours) < 0;
+              return (
+                <div key={r.id} style={{ 
+                  fontSize: '10px', padding: '2px 4px', borderRadius: '3px', marginBottom: '2px',
+                  backgroundColor: isNegative ? '#ffebee' : '#e3f2fd', 
+                  color: isNegative ? '#c62828' : '#1976d2', 
+                  display: 'flex', justifyContent: 'space-between'
+                }}>
+                  <span style={{ fontWeight: 'bold' }}>{searchTerm ? `${r.working_hours}h` : `${r.user_name.slice(0,2)} ${r.working_hours}h`}</span>
+                  {r.memo && <span>📝</span>}
+                </div>
+              )
+            })}
           </div>
         </div>
       )
@@ -129,7 +140,7 @@ export default function AdminPage() {
         <div style={{ marginTop: '12px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#555555', marginBottom: '6px' }}>👤 등록된 직원 선택:</div>
           {allUsers.length === 0 ? (
-            <span style={{ fontSize: '13px', color: '#888888' }}>가입된 직원이 없습니다.</span>
+            <span style={{ fontSize: '13px', color: '#888888' }}>이번 달에 등록된 근무 기록이 있는 직원이 없습니다.</span>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {allUsers.map(u => (
@@ -188,10 +199,10 @@ export default function AdminPage() {
             <div style={{ fontSize: '14px', color: '#666666' }}>이번 달에 등록된 근무 기록이 없습니다.</div>
           ) : (
             currentMonthRecords.map(r => {
-              const outMatch = r.memo?.match(/^\[외:\s*([\d.]+)h\]/)
+              const outMatch = r.memo?.match(/^\[외:\s*([-\d.]+)h\]/)
               const outHours = outMatch ? parseFloat(outMatch[1]) || 0 : 0
-              const inHours = r.working_hours - outHours
-              const cleanMemo = r.memo ? r.memo.replace(/^\[외:\s*[\d.]+h\]\s*/, '') : ''
+              const inHours = Number((r.working_hours - outHours).toFixed(2))
+              const cleanMemo = r.memo ? r.memo.replace(/^\[외:\s*[-\d.]+h\]\s*/, '') : ''
 
               return (
                 <div key={r.id} style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid #f0f0f0' }}>
@@ -200,15 +211,14 @@ export default function AdminPage() {
                       <span style={{ color: '#1976d2', marginRight: '8px' }}>[{r.work_date.slice(5)}]</span>
                       {r.user_name} <span style={{fontSize:'11px', color:'#666666'}}>({r.birth_date})</span>
                     </strong>
-                    <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>총 {r.working_hours}시간</span>
+                    <span style={{ fontWeight: 'bold', color: Number(r.working_hours) < 0 ? '#d32f2f' : '#2e7d32' }}>총 {r.working_hours}시간</span>
                   </div>
 
                   <div style={{ display: 'flex', gap: '5px', marginTop: '6px' }}>
                     <span style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', backgroundColor: '#f1f3f4', color: '#555555', border: '1px solid #e0e0e0' }}>
                       ⏱️ 근무표 내: <strong>{inHours}h</strong>
                     </span>
-                    {/* --- [코드 수정] 외 근무시간이 0보다 클 때만 배지가 노출되도록 예외 처리 --- */}
-                    {outHours > 0 && (
+                    {outHours !== 0 && (
                       <span style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', backgroundColor: '#fff3e0', color: '#e65100', border: '1px solid #ffe0b2' }}>
                         🚗 근무표 외: <strong>{outHours}h</strong>
                       </span>
